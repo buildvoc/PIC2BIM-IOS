@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "icon_btn_back_primary.pdf",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
