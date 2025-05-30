@@ -65,58 +65,54 @@ class PDFCreator: NSObject {
             
             //Extract Device Name
             let device = UIDevice.current
-            let modelName = "\(PDFCreator.unameMachine)"+" (\(device.systemName) \(device.systemVersion))"
+            _ = "\(PDFCreator.unameMachine)"+" (\(device.systemName) \(device.systemVersion))"
 
+             let image = addImage(image: image, pageRect: pageRect, imageTop: 0, imageX: pageRect.width/4, maxHeight: pageRect.height/2+150, maxWidth: pageRect.width/2+150)
+            _ = addImage(image: map, pageRect: pageRect, imageTop: image, imageX: 0, maxHeight: 245, maxWidth: 300)
             
-           
-            let image = addImage(image: image, pageRect: pageRect, imageTop: 0, imageX: pageRect.width/4, maxHeight: pageRect.height/2+150, maxWidth: pageRect.width/2+150)
-            let imageMap = addImage(image: map, pageRect: pageRect, imageTop: image, imageX: 0, maxHeight: 245, maxWidth: 300)
-            
-            let userPoint = addImage(image: UIImage(named: "pin_map")!, pageRect: pageRect, imageTop: image+122-12, imageX: 150-12, maxHeight: 24, maxWidth: 24)
+            _ = addImage(image: UIImage(named: "pin_map")!, pageRect: pageRect, imageTop: image+122-12, imageX: 150-12, maxHeight: 24, maxWidth: 24)
             
             let titlePropAttribute: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 14),
-                .foregroundColor: UIColor.black
-            ]
+                 .font: UIFont.systemFont(ofSize: 14),
+                 .foregroundColor: UIColor.black
+             ]
             
             let propAttribute: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 14),
-                .foregroundColor: UIColor(named: "Primary")!
-            ]
+                 .font: UIFont.systemFont(ofSize: 14),
+                 .foregroundColor: UIColor(named: "Primary")!
+             ]
             
-            let distanceFromImage = 320.0
-            let separator = 10.0
+             let distanceFromImage = 320.0
+             let separator = 10.0
             let title1 = addText(text: "Latitude", pageRect: pageRect, textTop: image+20, textX: distanceFromImage, textAttributes: titlePropAttribute)
             let title2 = addText(text: "Longitude", pageRect: pageRect, textTop: title1+separator, textX: distanceFromImage, textAttributes: titlePropAttribute)
             let title3 = addText(text: "Created", pageRect: pageRect, textTop: title2+separator, textX: distanceFromImage, textAttributes: titlePropAttribute)
             let title4 = addText(text: "Sent", pageRect: pageRect, textTop: title3+separator, textX: distanceFromImage, textAttributes: titlePropAttribute)
-            let title5 = addText(text: "Note", pageRect: pageRect, textTop: title4+separator, textX: distanceFromImage, textAttributes: titlePropAttribute)
-            let title6 = addText(text: "OSNMA Validated", pageRect: pageRect, textTop: title5+separator, textX: distanceFromImage, textAttributes: titlePropAttribute)
+           let title5 = addText(text: "Note", pageRect: pageRect, textTop: title4+separator, textX: distanceFromImage, textAttributes: titlePropAttribute)
+            _ = addText(text: "OSNMA Validated", pageRect: pageRect, textTop: title5+separator, textX: distanceFromImage, textAttributes: titlePropAttribute)
             
             let title1Prop = addTextRight(text: String(latitude), pageRect: pageRect, textTop: image+20, textX: pageRect.width-40, textAttributes: propAttribute)
-            let title2Prop = addTextRight(text: String(longitude), pageRect: pageRect, textTop: title1Prop+separator, textX: pageRect.width-40, textAttributes: propAttribute)
+           let title2Prop = addTextRight(text: String(longitude), pageRect: pageRect, textTop: title1Prop+separator, textX: pageRect.width-40, textAttributes: propAttribute)
             let title3Prop = addTextRight(text: String(shotDate), pageRect: pageRect, textTop: title2Prop+separator, textX: pageRect.width-40, textAttributes: propAttribute)
             let title4Prop = addTextRight(text: String(send), pageRect: pageRect, textTop: title3Prop+separator, textX: pageRect.width-40, textAttributes: propAttribute)
-            let title5Prop = addTextRight(text: String(note), pageRect: pageRect, textTop: title4Prop+separator, textX: pageRect.width-40, textAttributes: propAttribute)
-            var sendTxt = ""
+           let title5Prop = addTextRight(text: String(note), pageRect: pageRect, textTop: title4Prop+separator, textX: pageRect.width-40, textAttributes: propAttribute)
+        /*   var sendTxt = ""
             if send {
                 sendTxt = "yes"
             } else {
                 sendTxt = "no"
             }
+         */
             
-            var validTxt = ""
+           var validTxt = ""
             if validated {
                 validTxt = "yes"
             } else {
                 validTxt = "no"
             }
             
-            let title6Prop = addTextRight(text: validTxt, pageRect: pageRect, textTop: title5Prop+separator, textX: pageRect.width-40, textAttributes: propAttribute)
-            
-            
-            
-           
+            _ = addTextRight(text: validTxt, pageRect: pageRect, textTop: title5Prop+separator, textX: pageRect.width-40, textAttributes: propAttribute)
+ 
         }
         return data
     

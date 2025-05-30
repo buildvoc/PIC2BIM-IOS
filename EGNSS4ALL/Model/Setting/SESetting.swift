@@ -1,7 +1,7 @@
 import Foundation
 import UIKit
 
-enum SESection: Int, CaseIterable{
+enum SESection: Int, CaseIterable {
     case centroid
     
     var title: String {
@@ -67,9 +67,9 @@ enum SEOption: Int, CaseIterable {
     }
 }
 
-protocol SECell: UITableViewCell  {
+protocol SECell: UITableViewCell {
     
-    var optionType: SEOptionType {get}
+    var optionType: SEOptionType { get }
     
     func _reuseImplement(option: SEOption)
 }

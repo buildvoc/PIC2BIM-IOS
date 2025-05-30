@@ -12,7 +12,7 @@ class CHCluster {
         points.append(point)
     }
     
-    func removePoint(point: CHPoint){
+    func removePoint(point: CHPoint) {
         points.remove(at: points.firstIndex(of: point)!)
     }
     

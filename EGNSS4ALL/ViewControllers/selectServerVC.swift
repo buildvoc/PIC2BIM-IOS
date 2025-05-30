@@ -2,7 +2,7 @@
 //  selectServerVC.swift
 //  EGNSS4ALL
 //
-//  Created by ERASMICOIN on 26/06/23.
+//  Created by Gabriele Amendola on 26/06/23.
 //
 
 import UIKit

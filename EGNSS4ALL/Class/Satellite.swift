@@ -2,7 +2,7 @@
 //  Satellite.swift
 //  EGNSS4ALL
 //
-//  Created by ERASMICOIN on 06/06/22.
+//  Created by Gabriele Amendola on 06/06/22.
 //
 
 import Foundation
@@ -28,8 +28,6 @@ class Satellite
     var cno: Int?
     var valid: Bool?
     
-    
-    
     func validate(state: Bool) {
         self.stato = state
     }
@@ -54,7 +52,6 @@ class Satellite
     
     func updateSFRBXData(sat: Satellite) {
         self.timestamp = sat.timestamp
-        
         var dwrd = [Int]()
         
         let dwrd0 = sat.dwrd![0] as? Int ?? 0
@@ -76,9 +73,6 @@ class Satellite
         dwrd.append(dwrd7)
         
         self.dwrd = dwrd
-        
-        
-        
         
     }
     
@@ -112,21 +106,15 @@ class Satellite
     {
         self.id = dizionarioSat["id"] as? Int
         self.gnssId = dizionarioSat["azimuth"] as? Int
-        
     }
     
     enum gestoreErrori: Error {
         case FoundNil
     }
     
-    
-    
     static func downloadAllSats(jsonArray: [[String: Any]]) -> [Satellite]
     {
-            
         var sats = [Satellite]()
-        
-        
         for i in 0...jsonArray.count - 1 {
             if jsonArray[i]["svId"] == nil {
                 return []
@@ -169,15 +157,11 @@ class Satellite
             sats.append(sat)
         }
         
-        
-        
         return sats
     }
     
     static func downloadSingleSat(jsonArray: [String: Any]) -> Satellite
     {
-            
-            
         let id = jsonArray["svId"] as! Int
         let gnssId = jsonArray["gnssId"] as! Int
         let osnma = jsonArray["OSNMA"] as? String ?? "0000000000000000000000000000000000000000"
@@ -220,44 +204,42 @@ class Satellite
     
     static func downloadSingleSatLTE(jsonArray: [String: Any]) -> Satellite
     {
-            
-            
         let id = jsonArray["svId"] as! Int
         let gnssId = jsonArray["gnssId"] as! Int
         let osnma = jsonArray["osnma"] as? String ?? "0000000000000000000000000000000000000000"
         let timestamp = jsonArray["timestamp"] as? Int ?? Int(Date().timeIntervalSince1970)
-            let source = "client"
+        let source = "client"
         let numWords = jsonArray["numWords"] as? Int ?? 0
-            let versione = jsonArray["version"] as? Int ?? 0
+        let versione = jsonArray["version"] as? Int ?? 0
         let iTow = jsonArray["iTow"] as? Double ?? 0.0
-            let manufacturer = jsonArray["manufacturer"] as? String ?? ""
-            let model = jsonArray["model"] as? String ?? ""
-            var dwrd = [Int]()
-            
+        let manufacturer = jsonArray["manufacturer"] as? String ?? ""
+        let model = jsonArray["model"] as? String ?? ""
+        var dwrd = [Int]()
+        
         let dwrd0 = jsonArray["dwrd0"] as? Int ?? 0
-            let dwrd1 = jsonArray["dwrd1"] as? Int ?? 0
-            let dwrd2 = jsonArray["dwrd2"] as? Int ?? 0
-            let dwrd3 = jsonArray["dwrd3"] as? Int ?? 0
-            let dwrd4 = jsonArray["dwrd4"] as? Int ?? 0
-            let dwrd5 = jsonArray["dwrd5"] as? Int ?? 0
-            let dwrd6 = jsonArray["dwrd6"] as? Int ?? 0
-            let dwrd7 = jsonArray["dwrd7"] as? Int ?? 0
-            
-            dwrd.append(dwrd0)
-            dwrd.append(dwrd1)
-            dwrd.append(dwrd2)
-            dwrd.append(dwrd3)
-            dwrd.append(dwrd4)
-            dwrd.append(dwrd5)
-            dwrd.append(dwrd6)
-            dwrd.append(dwrd7)
+        let dwrd1 = jsonArray["dwrd1"] as? Int ?? 0
+        let dwrd2 = jsonArray["dwrd2"] as? Int ?? 0
+        let dwrd3 = jsonArray["dwrd3"] as? Int ?? 0
+        let dwrd4 = jsonArray["dwrd4"] as? Int ?? 0
+        let dwrd5 = jsonArray["dwrd5"] as? Int ?? 0
+        let dwrd6 = jsonArray["dwrd6"] as? Int ?? 0
+        let dwrd7 = jsonArray["dwrd7"] as? Int ?? 0
+        
+        dwrd.append(dwrd0)
+        dwrd.append(dwrd1)
+        dwrd.append(dwrd2)
+        dwrd.append(dwrd3)
+        dwrd.append(dwrd4)
+        dwrd.append(dwrd5)
+        dwrd.append(dwrd6)
+        dwrd.append(dwrd7)
         
         let azim = jsonArray["azim"] as? Int ?? 0
         let elev = jsonArray["elev"] as? Int ?? 0
         let cno = jsonArray["cno"] as? Int ?? 0
-            
+        
         let sat = Satellite.init(id: id, gnssId: gnssId, timestamp: timestamp, validTimeStamp: 0, source: source, numWords: numWords, versione: versione, iTow: iTow, manufacturer: manufacturer, model: model, dwrd: dwrd, stato: false, checked: 0, osnma: osnma, azim: azim, elev: elev, cno: cno, valid: true)
-            
+        
         
         return sat
     }
@@ -269,28 +251,39 @@ class Satellite
         if let jsonArray = NetworkService.parseJSONFromData(datiJson as Data) {
             print(jsonArray)
             
-            
             for i in jsonArray.keys {
                 
                 let id = i
-                
                
-                let actualSatId = id.dropFirst()
-                var idInt = Int(actualSatId)
-                if idInt == nil {
-                    idInt = Int(id)
-                } else {
-                    idInt = Int(actualSatId)
-                }
-            
+                let actualSatId = String(id)
                 let azimuth = jsonArray[i]!["azimuth"] as! Double
                 let elevation = jsonArray[i]!["elevation"] as! Double
-   
-                let singleSat = Satellite.init(id: idInt!, gnssId: 2, timestamp: 0, validTimeStamp: 0, source: "skyView", numWords: 0, versione: 0, iTow: 0, manufacturer: "none", model: "none", dwrd: [], stato: false, checked: 0, osnma: "Validating...", azim: Int(azimuth), elev: Int(elevation), cno: 0, valid: false)
+                let satNum : String? = formateData(from: actualSatId)
+            
+                let singleSat = Satellite.init(id: (Int(satNum ?? actualSatId) ?? Int(i)) ?? 0, gnssId: 2, timestamp: 0, validTimeStamp: 0, source: "skyView", numWords: 0, versione: 0, iTow: 0, manufacturer: deviceManufacturer, model: deviceModel, dwrd: [], stato: false, checked: 0, osnma: "Validating...", azim: Int(azimuth), elev: Int(elevation), cno: 0, valid: false)
                 sats.append(singleSat)
+
             }
         }
         return sats
     }
+    
+    
+    static func formateData(from string: String) -> String {
+        let components = string.components(separatedBy: " ")
+        if components.count > 1
+        {
+            let filteredComponents = components.filter { !$0.isEmpty }
+            
+            if let lastSubstring = filteredComponents.last {
+                return String(lastSubstring) 
+            }
+        }
+        let numbersOnly = string.filter { character in
+            return character.isWholeNumber
+        }
+        return numbersOnly
+
+            }
 
 }

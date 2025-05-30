@@ -2,6 +2,7 @@
 //  PersistPhoto+CoreDataClass.swift
 //  GTPhotos
 //
+//  Created by Jiří Müller on 15/11/2020.
 //
 //
 
@@ -23,7 +24,6 @@ public class PersistPhoto: NSManagedObject {
         }
         return persistPhotos
     }
-
 }
 
-
+// Created for the GSA in 2020-2021. Project management: SpaceTec Partners, software development: www.foxcom.eu

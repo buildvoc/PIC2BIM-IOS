@@ -2,6 +2,7 @@
 //  PathTrackTableViewCell.swift
 //  GTPhotos
 //
+//  Created by Jiří Müller on 03/12/2020.
 //
 
 import UIKit
@@ -9,9 +10,7 @@ import UIKit
 class PathTrackTableViewCell: UITableViewCell {
     
     static let indentifier = "PathTrackTableViewCell"
-   
     
-
     @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var startLabel: UILabel!
     @IBOutlet weak var endLabel: UILabel!
@@ -19,10 +18,10 @@ class PathTrackTableViewCell: UITableViewCell {
     @IBOutlet weak var sentLabel: UILabel!
     
     @IBOutlet weak var kmlBtn: UIButton!
+    
     override func awakeFromNib() {
         kmlBtn.layer.borderWidth = 1.0
         kmlBtn.layer.borderColor = UIColor.black.cgColor
-        super.awakeFromNib()
         // Initialization code
     }
 
@@ -34,4 +33,4 @@ class PathTrackTableViewCell: UITableViewCell {
 
 }
 
-
+// Created for the GSA in 2020-2021. Project management: SpaceTec Partners, software development: www.foxcom.eu

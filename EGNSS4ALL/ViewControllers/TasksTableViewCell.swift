@@ -2,7 +2,7 @@
 //  TasksTableViewCell.swift
 //  GTPhotos
 //
-//
+//  Created by FoxCom on 24.03.2021.
 //
 
 import UIKit
@@ -23,10 +23,9 @@ class TasksTableViewCell: UITableViewCell {
 
     override func setSelected(_ selected: Bool, animated: Bool) {
         super.setSelected(selected, animated: animated)
-
         // Configure the view for the selected state
     }
 
 }
 
-
+// Created for the GSA in 2020-2021. Project management: SpaceTec Partners, software development: www.foxcom.eu

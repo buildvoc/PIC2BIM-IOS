@@ -1,14 +1,14 @@
 //
-//  circleView.swift
+//  CircleView.swift
 //  EGNSS4CAP
 //
-//  
+//  Created by Gabriele Amendola on 01/06/22.
 //
 
 import UIKit
 
-class circleView: UIView {
-
+class CircleView: UIView {
+    
     override func draw(_ rect: CGRect) {
         for i in 0..<9 {
             let circle = UIBezierPath(arcCenter: CGPoint(x: bounds.width/2, y: bounds.height/2), radius: CGFloat(i) * 19, startAngle: 0, endAngle: 2 * CGFloat.pi, clockwise: true)
@@ -89,12 +89,6 @@ class circleView: UIView {
         est.textAlignment = .center
         est.text = "E"
         self.addSubview(est)
-        
-        
-        
     }
     
-    
-    
-
 }

@@ -2,7 +2,7 @@
 //  LoginViewController.swift
 //  EGNSS4CAP
 //
-//  
+//  Created by FoxCom on 03/11/2020.
 //
 
 import UIKit
@@ -45,9 +45,6 @@ class LoginViewController: UIViewController,UITextFieldDelegate {
                 self.view.bounds.origin.y += keyboardFrame.height
             }
         }
-        
-        
-       
     }
 
     @objc func keyboardWillHide(notification: NSNotification) {
@@ -57,7 +54,7 @@ class LoginViewController: UIViewController,UITextFieldDelegate {
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        AppDelegate.AppUtility.lockOrientation(UIInterfaceOrientationMask.portrait, andRotateTo: UIInterfaceOrientation.portrait)
+        //AppDelegate.AppUtility.lockOrientation(UIInterfaceOrientationMask.portrait, andRotateTo: UIInterfaceOrientation.portrait)
         
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
@@ -109,10 +106,12 @@ class LoginViewController: UIViewController,UITextFieldDelegate {
             var status: String
             var error_msg: String?
             var user: Answer_user?
+            var token: String?
+
         }
         
         struct Answer_user: Decodable {
-            var id: String
+            var id: Int
             var name: String
             var surname: String
         }
@@ -120,11 +119,13 @@ class LoginViewController: UIViewController,UITextFieldDelegate {
         let jsonData = data.data(using: .utf8)!
         let answer = try! JSONDecoder().decode(Answer.self, from: jsonData)
         
-        if answer.status == "ok" {
-            UserStorage.userID = Int((answer.user?.id)!)!
+        if answer.status == "ok",let user = answer.user {
+            UserStorage.userID = user.id
             UserStorage.login = loginTextField.text ?? ""
             UserStorage.userName = (answer.user?.name)!
-            UserStorage.userSurname = (answer.user?.surname)!       
+            UserStorage.userSurname = (answer.user?.surname)!
+            UserStorage.token = (answer.token)
+
                 
             performSegue(withIdentifier: "unwindToMainView", sender: self)
         } else {
@@ -144,30 +145,16 @@ class LoginViewController: UIViewController,UITextFieldDelegate {
         let pswdText = encodeParamenters(parametro: pswdTextField.text ?? "")
         
         // Prepare URL
-        
-        let customServer = localStorage.bool(forKey: "customServer")
-        
-        var urlStr = ""
-        
-        if customServer {
-            urlStr = (localStorage.string(forKey: "url") ?? "https://www.egnss4all.com") + "/egnss4allservices/comm_login.php"
-        } else {
-            urlStr = "https://www.egnss4all.com/egnss4allservices/comm_login.php"
-        }
-        
-        
+        let urlStr = Configuration.baseURLString + ApiEndPoint.login
+        print("------------------------------------------")
         print(urlStr)
-        
-        
+        print("------------------------------------------")
         let url = URL(string: urlStr)
-        
-    
         guard let requestUrl = url else { fatalError() }
         // Prepare URL Request Object
         var request = URLRequest(url: requestUrl)
         request.httpMethod = "POST"
         
-         
         // HTTP Request Parameters which will be sent in HTTP Request Body
         let postString = "login=\(loginText)&pswd=\(pswdText)"
         print(postString)
@@ -208,4 +195,4 @@ class LoginViewController: UIViewController,UITextFieldDelegate {
 
 }
 
-
+// Created for the GSA in 2020-2021. Project management: SpaceTec Partners, software development: www.foxcom.eu

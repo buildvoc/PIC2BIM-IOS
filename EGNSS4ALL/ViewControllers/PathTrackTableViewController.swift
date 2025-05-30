@@ -1,17 +1,14 @@
 import UIKit
 import CoreData
 
-
 class PathTrackTableViewController: UITableViewController, UIDocumentPickerDelegate {
     
     let db = DB()
-    
     var paths: [PTPath] = []
     var selectedPath: PTPath?
     let sendDQ = DispatchQueue(label: "sendDQ")
     let sendDB = DB()
     let c = DB().privateMOC
-    
     let localStorage = UserDefaults.standard
     
     @IBOutlet weak var editButton: UIBarButtonItem!
@@ -19,9 +16,7 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         tableView.tableFooterView = UIView()
-        
         loadPaths()
     }
     
@@ -30,13 +25,11 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        
         return paths.count
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let path = paths[indexPath.row]
-        
         let cell = tableView.dequeueReusableCell(withIdentifier: PathTrackTableViewCell.indentifier, for: indexPath) as! PathTrackTableViewCell
         cell.nameLabel.text = path.name
         cell.startLabel.text = Util.prettyDate(date: path.start!) + " " + Util.prettyTime(date: path.start!)
@@ -46,7 +39,6 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
         cell.selectionStyle = .none
         cell.kmlBtn.addTarget(self, action: #selector(kmlBtnTapped(_:)), for: .touchUpInside)
         cell.backgroundColor = .clear
-        
         return cell
     }
     
@@ -65,30 +57,26 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         selectedPath = paths[indexPath.row]
-        
-        
-        //performSegue(withIdentifier: "ShowPathInMap", sender: self)
-
+        performSegue(withIdentifier: "ShowPathInMap", sender: self)
     }
     
     @objc func kmlBtnTapped(_ sender: UIButton) {
         guard let indexPath = tableView.indexPath(for: sender.superview?.superview?.superview as! PathTrackTableViewCell) else {
-                return
-            }
-            let selectedRow = indexPath.row
-            selectedPath = paths[selectedRow]
-            var groups = [DispatchGroup]()
-            let dispatchGroup = DispatchGroup()
-            groups.append(dispatchGroup)
-            dispatchGroup.enter()
-            if !self.genPathKML(ptPath: selectedPath!, dispatchGroup: dispatchGroup) {
-                dispatchGroup.leave()
-            }
-        
+            return
         }
+        let selectedRow = indexPath.row
+        selectedPath = paths[selectedRow]
+        var groups = [DispatchGroup]()
+        let dispatchGroup = DispatchGroup()
+        groups.append(dispatchGroup)
+        dispatchGroup.enter()
+        if !self.genPathKML(ptPath: selectedPath!, dispatchGroup: dispatchGroup) {
+            dispatchGroup.leave()
+        }
+    }
     
     @IBAction func editTable(_ sender: UIBarButtonItem) {
-        if(tableView.isEditing == true){
+        if(tableView.isEditing == true) {
             tableView.isEditing = false
             editButton.title = "Edit"
             sendButton.isEnabled = true
@@ -101,7 +89,6 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
     
     @IBAction func sendAllAction(_ sender: UIBarButtonItem) {
         let pathsToSend = self.pathToSend(context: db.mainMOC)
-        
         let toUpload = pathsToSend.count > 0
         var msg = "\(pathsToSend.count) Paths not uploaded."
         if (msg == "1 Paths not uploaded.") {
@@ -126,7 +113,6 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
             DispatchQueue.main.sync {
                 self.present(waitAlert, animated: true, completion: nil)
             }
-            
             self.sendDB.privateMOC.reset()
             self.sendDB.privateMOC.retainsRegisteredObjects = true
             let pathsToSend = self.pathToSend(context: self.sendDB.privateMOC)
@@ -159,8 +145,7 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
         
         let ptPoints = ptPointsSet.array as! [PTPoint]
         
-        let df = DateFormatter()
-        df.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        let df = MyDateFormatter.yyyyMMdd
         struct RPoint: Codable {
             var lat: Double
             var lng: Double
@@ -181,24 +166,15 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
         }
         
         let jsonPointsString = String(data: pointData, encoding: .utf8)!
-        let params: [String: String] = [
-            "user_id": String(UserStorage.userID),
-            "name": ptPath.name!,
-            "start": df.string(from: ptPath.start!),
-            "end": df.string(from: ptPath.end!),
-            "area": ptPath.area.description,
-            "points": jsonPointsString
-        ]
         print(jsonPointsString)
         
         
-       
-
-        let polygon: [String: Any] = ["type": "Polygon", "coordinates": [coordinates]]
-
-        let feature: [String: Any] = ["type": "Feature", "geometry": polygon, "properties": [:]]
-
-        let geojson: [String: Any] = ["type": "FeatureCollection", "features": [feature]]
+        
+        
+       // let polygon: [String: Any] = ["type": "Polygon", "coordinates": [coordinates]]
+        
+       // let feature: [String: Any] = ["type": "Feature", "geometry": polygon, "properties": [:]]
+        
         
         print(coordinates)
         
@@ -211,36 +187,38 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
                 try kmlData.write(to: fileURL)
                 print("File salvato con successo in \(fileURL.path)")
                 
-                let documentPicker = UIDocumentPickerViewController(url: fileURL, in: .exportToService)
-                       documentPicker.delegate = self
-                       present(documentPicker, animated: true)
+//              let documentPicker = UIDocumentPickerViewController(url: fileURL, in: .exportToService) depricated code 
+                let documentPicker = UIDocumentPickerViewController(forExporting: [fileURL])
+
+                documentPicker.delegate = self
+                present(documentPicker, animated: true)
             } catch {
                 print("Errore durante il salvataggio del file: \(error.localizedDescription)")
             }
         }
-
+        
         /*if let jsonData = try? JSONSerialization.data(withJSONObject: geojson, options: []) {
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                
-                
-                
-                
-                if let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-                    print("\(ptPath.name!).geojson")
-                    let fileURL = url.appendingPathComponent("\(ptPath.name!).geojson")
-                    do {
-                        try jsonString.write(to: fileURL, atomically: true, encoding: .utf8)
-                        print("File salvato con successo in \(fileURL.path)")
-                        
-                        let documentPicker = UIDocumentPickerViewController(url: fileURL, in: .exportToService)
-                               documentPicker.delegate = self
-                               present(documentPicker, animated: true)
-                    } catch {
-                        print("Errore durante il salvataggio del file: \(error.localizedDescription)")
-                    }
-                }
-            }
-        }*/
+         if let jsonString = String(data: jsonData, encoding: .utf8) {
+         
+         
+         
+         
+         if let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+         print("\(ptPath.name!).geojson")
+         let fileURL = url.appendingPathComponent("\(ptPath.name!).geojson")
+         do {
+         try jsonString.write(to: fileURL, atomically: true, encoding: .utf8)
+         print("File salvato con successo in \(fileURL.path)")
+         
+         let documentPicker = UIDocumentPickerViewController(url: fileURL, in: .exportToService)
+         documentPicker.delegate = self
+         present(documentPicker, animated: true)
+         } catch {
+         print("Errore durante il salvataggio del file: \(error.localizedDescription)")
+         }
+         }
+         }
+         }*/
         
         
         
@@ -251,7 +229,7 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
         guard coordinates.count >= 3 else {
             fatalError("A polygon must have at least 3 coordinates.")
         }
-
+        
         var kmlString = """
         <?xml version="1.0" encoding="UTF-8"?>
         <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -261,11 +239,11 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
         <outerBoundaryIs><LinearRing>
         <coordinates>
         """
-
+        
         for coordinate in coordinates {
             kmlString += "\(coordinate.longitude),\(coordinate.latitude),0 "
         }
-
+        
         kmlString += """
         </coordinates>
         </LinearRing></outerBoundaryIs>
@@ -274,10 +252,10 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
         </Document>
         </kml>
         """
-
+        
         return kmlString.data(using: .utf8) ?? Data()
     }
-
+    
     
     func createKMLFromCoordinates(coordinates: [(latitude: Double, longitude: Double)]) -> String {
         var kmlString = """
@@ -285,11 +263,11 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
         <kml xmlns="http://www.opengis.net/kml/2.2">
         <Document>
         """
-
+        
         for (index, coordinate) in coordinates.enumerated() {
             let name = "Point \(index + 1)"
             let description = "Coordinate: \(coordinates[0]), \(coordinate.longitude)"
-
+            
             kmlString += """
                 <Placemark>
                     <name>\(name)</name>
@@ -300,12 +278,12 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
                 </Placemark>
             """
         }
-
+        
         kmlString += """
             </Document>
         </kml>
         """
-
+        
         return kmlString
     }
     
@@ -316,16 +294,18 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
         
         let ptPoints = ptPointsSet.array as! [PTPoint]
         
-        let df = DateFormatter()
-        df.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        let df = MyDateFormatter.yyyyMMdd
+        
         struct RPoint: Codable {
             var lat: Double
             var lng: Double
             var created: String
+            var altitude: Double
+            var accuracy : Double
         }
         var rPoints = [RPoint]()
         for p in ptPoints {
-            rPoints.append(RPoint(lat: p.lat, lng: p.lng, created: df.string(from: p.created!)))
+            rPoints.append(RPoint(lat: p.lat, lng: p.lng, created: df.string(from: p.created!),altitude: p.altitude,accuracy: p.accuracy))
         }
         let pointData: JSONEncoder.Output
         do {
@@ -345,29 +325,17 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
             "points": jsonPointsString
         ]
         
-        print(params)
-        
-        
         // Prepare URL
-        
-        let customServer = localStorage.bool(forKey: "customServer")
-        
-        var urlStr = ""
-        
-        if customServer {
-            urlStr = (localStorage.string(forKey: "url") ?? "https://www.egnss4all.com") + "/egnss4allservices/comm_path.php"
-        } else {
-            urlStr = "https://www.egnss4all.com/egnss4allservices/comm_path.php"
-        }
-        
-        
+        let urlStr = Configuration.baseURLString + ApiEndPoint.path
+        print("------------------------------------------")
         print(urlStr)
+        print("------------------------------------------")
         let url = URL(string: urlStr)
-        
-       
         guard let requestUrl = url else { fatalError() }
         var request = URLRequest(url: requestUrl)
         request.httpMethod = "POST"
+                            request.setValue("Bearer \(UserStorage.token!)", forHTTPHeaderField: "Authorization")
+
         let postString = Util.encodeParameters(params: params)
         request.httpBody = postString.data(using: .utf8)
         let task = URLSession.shared.dataTask(with: request) { (data, response, error) in
@@ -389,7 +357,7 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
             var status: String
             var error_msg: String?
         }
-
+        
         let jsonData = data.data(using: .utf8)!
         let answer: Answer
         do {
@@ -436,3 +404,4 @@ class PathTrackTableViewController: UITableViewController, UIDocumentPickerDeleg
     
 }
 
+// Created for the GSA in 2020-2021. Project management: SpaceTec Partners, software development: www.foxcom.eu

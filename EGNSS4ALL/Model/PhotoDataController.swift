@@ -2,7 +2,7 @@ import CoreLocation
 import CoreMotion
 import UIKit
 
-class PhotoDataController: NSObject, CLLocationManagerDelegate {
+class PhotoDataController: NSObject {
     
     typealias LocationReceiver = (_ location: CLLocation) -> Void
     typealias HeadingReceiver = (_ heading: CLHeading) -> Void
@@ -57,99 +57,42 @@ class PhotoDataController: NSObject, CLLocationManagerDelegate {
     
     override init() {
         super.init()
-        initLocationManager()
+        checkIfLocationServicesIsEnabled()
         initMotionManager()
     }
-
-    private func initLocationManager() {
-        locationManager.requestWhenInUseAuthorization()
-        guard CLLocationManager.locationServicesEnabled() else {
-            return
+    
+    func checkIfLocationServicesIsEnabled() {
+        DispatchQueue.global().async {
+            if CLLocationManager.locationServicesEnabled() {
+                self.locationManager.delegate = self
+                self.locationManager.desiredAccuracy = Self.locationAccuracy
+                self.locationManager.distanceFilter = kCLDistanceFilterNone
+                DispatchQueue.main.async {
+                    self.checkLocationAuthorization()
+                }
+            } else {
+                // show message: Services desabled!
+                DispatchQueue.main.async {
+                    self.checkLocationAuthorization()
+                }
+            }
         }
-        locationManager.delegate = self
-        locationManager.desiredAccuracy = Self.locationAccuracy
-        locationManager.distanceFilter = kCLDistanceFilterNone
+    }
+    
+    private func checkLocationAuthorization() {
+        switch locationManager.authorizationStatus {
+        case .notDetermined:
+            locationManager.requestWhenInUseAuthorization()
+        default:
+            break
+        }
     }
     
     private func initMotionManager() {
         if !motionManager.isDeviceMotionAvailable {
-           return
+            return
         }
         motionManager.deviceMotionUpdateInterval = Double(Self.motionUpdateIntervalMils) / 1000
-    }
-
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        locationDQ.async {
-            guard let location = manager.location else {
-                return
-            }
-            
-            self.locations.append(location)
-            self.lastLocation = location
-            if (self.locationReceiver != nil) {
-                DispatchQueue.main.async {
-                    self.locationReceiver!(location)
-                }
-            }
-            print("Adding location. Remains: \(self.locations.count)")
-        }
-        
-        if (isCentroid) {
-            centroidDQ.async {
-                var locations = locations
-                for cenLoc in self.centroids {
-                    locations = locations.filter{
-                        if $0.coordinate.latitude == cenLoc.coordinate.latitude {
-                            print("Lost centroid location: \(cenLoc)")
-                            return false
-                        } else {
-                            return true
-                        }
-                        
-                    }
-                }
-                let remove = self.centroids.count + locations.count - self.centroidMaxCount!
-                if remove > 0 {
-                    self.centroids.removeSubrange(0..<remove)
-                }
-                self.centroids.append(contentsOf: locations)
-                if (self.centroids.count == self.centroidMaxCount) {
-                    var points: [CHPoint] = []
-                    for loc in self.centroids {
-                        points.append(CHPoint(x: loc.coordinate.latitude, y: loc.coordinate.longitude))
-                    }
-                    self.cluster.points = points
-                    var lastPerimeter: [CHPoint]? = nil
-                    self.lastCentroid = self.cluster.computeCentroid(lastPerimeter: &lastPerimeter)
-                }
-                DispatchQueue.main.async {
-                    var count: Int = 0
-                    var centroid: CHPoint? = nil
-                    self.centroidDQ.sync {
-                        count = self.centroids.count
-                        centroid = self.lastCentroid
-                    }
-                    self.centroidReceiver!(count, centroid?.x, centroid?.y)
-                }
-            }
-        }
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("Location error: \(error)")
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
-        headingDQ.sync {
-            self.headings.append(newHeading)
-            self.lastHeading = newHeading
-            if (self.headingReceiver != nil) {
-                DispatchQueue.main.async {
-                    self.headingReceiver!(newHeading)
-                }
-            }
-            print("Adding heading. Remains: \(self.headings.count)")
-        }
     }
     
     private func refreshLocations() {
@@ -192,7 +135,7 @@ class PhotoDataController: NSObject, CLLocationManagerDelegate {
     }
     
     private func isDelayCorrect(refTimeArr: [TimeInterval]) -> Bool {
-        if (refTimeArr.count == 1){
+        if (refTimeArr.count == 1) {
             return true
         }
         var sumTime: Double = 0
@@ -238,7 +181,7 @@ class PhotoDataController: NSObject, CLLocationManagerDelegate {
     private func startLocations() {
         isLocRefreshRunning = true
         if (isCentroid) {
-            centroidTimer = Timer.scheduledTimer(withTimeInterval: Double(Self.centroidUpdateIntervalMils) / 1000, repeats: true) {timer in
+            centroidTimer = Timer.scheduledTimer(withTimeInterval: Double(Self.centroidUpdateIntervalMils) / 1000, repeats: true) { timer in
                 // násilné vynucení updatu
                 self.locationManager.stopUpdatingLocation()
                 self.locationManager.startUpdatingLocation()
@@ -442,7 +385,7 @@ class PhotoDataController: NSObject, CLLocationManagerDelegate {
         }
         
         return tilt
-
+        
     }
     
     
@@ -472,3 +415,84 @@ class PhotoDataController: NSObject, CLLocationManagerDelegate {
     
 }
 
+extension PhotoDataController: CLLocationManagerDelegate {
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        locationDQ.async {
+            guard let location = manager.location else {
+                return
+            }
+            
+            self.locations.append(location)
+            self.lastLocation = location
+            if (self.locationReceiver != nil) {
+                DispatchQueue.main.async {
+                    self.locationReceiver!(location)
+                }
+            }
+            print("Adding location. Remains: \(self.locations.count)")
+        }
+        
+        if (isCentroid) {
+            centroidDQ.async {
+                var locations = locations
+                for cenLoc in self.centroids {
+                    locations = locations.filter{
+                        if $0.coordinate.latitude == cenLoc.coordinate.latitude {
+                            print("Lost centroid location: \(cenLoc)")
+                            return false
+                        } else {
+                            return true
+                        }
+                        
+                    }
+                }
+                let remove = self.centroids.count + locations.count - self.centroidMaxCount!
+                if remove > 0 {
+                    self.centroids.removeSubrange(0..<remove)
+                }
+                self.centroids.append(contentsOf: locations)
+                if (self.centroids.count == self.centroidMaxCount) {
+                    var points: [CHPoint] = []
+                    for loc in self.centroids {
+                        points.append(CHPoint(x: loc.coordinate.latitude, y: loc.coordinate.longitude))
+                    }
+                    self.cluster.points = points
+                    var lastPerimeter: [CHPoint]? = nil
+                    self.lastCentroid = self.cluster.computeCentroid(lastPerimeter: &lastPerimeter)
+                }
+                DispatchQueue.main.async {
+                    var count: Int = 0
+                    var centroid: CHPoint? = nil
+                    self.centroidDQ.sync {
+                        count = self.centroids.count
+                        centroid = self.lastCentroid
+                    }
+                    self.centroidReceiver!(count, centroid?.x, centroid?.y)
+                }
+            }
+        }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("Location error: \(error)")
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
+        headingDQ.sync {
+            self.headings.append(newHeading)
+            self.lastHeading = newHeading
+            if (self.headingReceiver != nil) {
+                DispatchQueue.main.async {
+                    self.headingReceiver!(newHeading)
+                }
+            }
+            print("Adding heading. Remains: \(self.headings.count)")
+        }
+    }
+    
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        checkLocationAuthorization()
+    }
+}
+
+// Created for the GSA in 2020-2021. Project management: SpaceTec Partners, software development: www.foxcom.eu

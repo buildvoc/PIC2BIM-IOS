@@ -2,6 +2,7 @@
 //  TaskViewController.swift
 //  GTPhotos
 //
+//  Created by FoxCom on 25.03.2021.
 //
 
 import UIKit
@@ -17,7 +18,6 @@ class TaskViewController: UIViewController {
     
     var waitAlert:UIAlertController!
     var photosToSend = [PersistPhoto]()
-    
     let localStorage = UserDefaults.standard
 
     @IBOutlet weak var idLabel: UILabel!
@@ -44,11 +44,8 @@ class TaskViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         changeStatus()
-        
         loadPersistPhotos()
-        
         updateDetail()
         updateSendButton()
         loadPhoto()
@@ -57,7 +54,7 @@ class TaskViewController: UIViewController {
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        AppDelegate.AppUtility.lockOrientation(UIInterfaceOrientationMask.portrait, andRotateTo: UIInterfaceOrientation.portrait)
+       // AppDelegate.AppUtility.lockOrientation(UIInterfaceOrientationMask.portrait, andRotateTo: UIInterfaceOrientation.portrait)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -67,7 +64,6 @@ class TaskViewController: UIViewController {
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         
         super.prepare(for: segue, sender: sender)
-        
         switch(segue.identifier ?? "") {
             
         case "ShowTaskCamera":
@@ -84,7 +80,6 @@ class TaskViewController: UIViewController {
             guard let galleryViewController = segue.destination as? GalleryViewController else {
                 fatalError("Unexpected destination: \(segue.destination)")
             }
-            
             galleryViewController.taskid = persistTask.id
             galleryViewController.currentPhotoIndex = currentPhotoIndex
             galleryViewController.persistPhotos = persistPhotos
@@ -93,8 +88,6 @@ class TaskViewController: UIViewController {
             fatalError("Unexpected Segue Identifier; \(String(describing: segue.identifier))")
         }
     }
-    
-
     /*
     // MARK: - Navigation
 
@@ -107,21 +100,19 @@ class TaskViewController: UIViewController {
     @IBAction func noteButton(_ sender: UIButton) {
         //1. Create the alert controller.
         let alert = UIAlertController(title: "Task note", message: "", preferredStyle: .alert)
-
         //2. Add the text field. You can configure it however you need.
         alert.addTextField { (textField) in
             textField.text = self.persistTask.note
         }
-
         // 3. Grab the value from the text field, and print it when the user clicks OK.
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { [weak alert] (_) in
             let textField = alert?.textFields![0] // Force unwrapping because we know it exists.
             
             self.persistTask.note = textField?.text
             
-            do{
+            do {
                 try self.manageObjectContext.save()
-            }catch{
+            } catch {
                 print("Could not save data: \(error.localizedDescription)")
             }
             
@@ -152,7 +143,7 @@ class TaskViewController: UIViewController {
     }
     
     @IBAction func nextButton(_ sender: Any) {
-        if currentPhotoIndex < (persistPhotos.count - 1){
+        if currentPhotoIndex < (persistPhotos.count - 1) {
             currentPhotoIndex = currentPhotoIndex + 1
             loadPhoto()
         }
@@ -171,13 +162,11 @@ class TaskViewController: UIViewController {
     }
     
     func changeStatus() {
-        
         if persistTask.status == "new" {
-            persistTask.status = "open"
-            
-            do{
+             persistTask.status = "open"
+            do {
                 try self.manageObjectContext.save()
-            }catch{
+            } catch {
                 print("Could not save data: \(error.localizedDescription)")
             }
         }
@@ -204,9 +193,9 @@ class TaskViewController: UIViewController {
         loadPhoto()
         updateSendButton()
                 
-        do{
+        do {
             try self.manageObjectContext.save()
-        }catch{
+        } catch {
             print("Could not save data: \(error.localizedDescription)")
         }
     }
@@ -223,7 +212,6 @@ class TaskViewController: UIViewController {
     }
     
     func updateDetail() {
-        
         if persistTask.status == "data provided" {
             noteButton.isHidden = true;
             cameraButton.isHidden = true;
@@ -248,10 +236,14 @@ class TaskViewController: UIViewController {
         nameLabel.text = persistTask.name
         statusLabel.text = persistTask.status
         
-        let df = DateFormatter()
-        df.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        createdLabel.text = df.string(from: persistTask.date_created!)
-        dueLabel.text = df.string(from: persistTask.task_due_date!)
+        let df = MyDateFormatter.yyyyMMdd
+        if let dateCreated = persistTask.date_created  {
+            createdLabel.text = df.string(from: dateCreated)
+        }
+        if let dueDate = persistTask.task_due_date {
+            dueLabel.text = df.string(from: dueDate)
+        }
+
         textView.text = persistTask.text
         returnLabel.text = persistTask.text_returned
         noteLabel.text = persistTask.note
@@ -281,14 +273,13 @@ class TaskViewController: UIViewController {
     func loadPhoto() {
         if (persistPhotos.count > 0) {
             orderLabel.text = String(currentPhotoIndex+1) + "/" + String(persistPhotos.count)
-            
             photoImage.image = UIImage(data: persistPhotos[currentPhotoIndex].photo!)
             latLabel.text = persistPhotos[currentPhotoIndex].lat.description
             longLabel.text = persistPhotos[currentPhotoIndex].lng.description
             
-            let df = DateFormatter()
-            df.dateFormat = "yyyy-MM-dd HH:mm:ss"
-            photoCreatedLabel.text = df.string(from: persistPhotos[currentPhotoIndex].created!)
+            if let created = persistPhotos[currentPhotoIndex].created {
+                photoCreatedLabel.text = MyDateFormatter.yyyyMMdd.string(from: created)
+            }
             
             if persistPhotos[currentPhotoIndex].sended == false {
                 deleteButton.isEnabled = true
@@ -303,9 +294,7 @@ class TaskViewController: UIViewController {
             latLabel.text = ""
             longLabel.text = ""
             photoCreatedLabel.text = ""
-            
             deleteButton.isEnabled = false
-            
             galleryButton.isEnabled = false;
         }
     }
@@ -317,9 +306,7 @@ class TaskViewController: UIViewController {
         loadingIndicator.style = .medium
         loadingIndicator.startAnimating();
         waitAlert.view.addSubview(loadingIndicator)
-        
         self.present(waitAlert, animated: true, completion: nil)
-        
         sendPhoto()
     }
     
@@ -335,7 +322,6 @@ class TaskViewController: UIViewController {
         
         if (photosToSend.count > 0) {
             let userID = String(UserStorage.userID)
-            
             struct Photo:Codable {
                 var lat:Double
                 var lng:Double
@@ -352,34 +338,53 @@ class TaskViewController: UIViewController {
                 var note:String
                 var photo:String
                 var digest:String
+                var deviceManufacture:String
+                var deviceModel:String
+                var devicePlatform:String
+                var deviceVersion:String
             }
             
-            let df = DateFormatter()
-            df.dateFormat = "yyyy-MM-dd HH:mm:ss"
+            let df = MyDateFormatter.yyyyMMdd
             let stringDate = df.string(from: photosToSend[0].created!)
             
             let data:Data = photosToSend[0].photo!
             let base64String:String = data.base64EncodedString(options: NSData.Base64EncodingOptions(rawValue:0))
             
-            let photo = Photo(lat:photosToSend[0].lat, lng:photosToSend[0].lng, altitude: photosToSend[0].altitude, bearing: photosToSend[0].bearing, magnetic_azimuth: photosToSend[0].azimuth, photo_heading: photosToSend[0].photoHeading, accuracy: photosToSend[0].accuracy, orientation: photosToSend[0].orientation, pitch: photosToSend[0].pitch, roll: photosToSend[0].roll, photo_angle: photosToSend[0].tilt, created: stringDate, note: photosToSend[0].note ?? "", photo: base64String, digest:photosToSend[0].digest!)
+            let photo = Photo(lat:photosToSend[0].lat, lng:photosToSend[0].lng, altitude: photosToSend[0].altitude, bearing: photosToSend[0].bearing, magnetic_azimuth: photosToSend[0].azimuth, photo_heading: photosToSend[0].photoHeading, accuracy: photosToSend[0].accuracy, orientation: photosToSend[0].orientation, pitch: photosToSend[0].pitch, roll: photosToSend[0].roll, photo_angle: photosToSend[0].tilt, created: stringDate, note: photosToSend[0].note ?? "", photo: base64String, digest:photosToSend[0].digest!,deviceManufacture: deviceManufacturer ,deviceModel: deviceModel ,devicePlatform:devicePlatform, deviceVersion: deviceVersion)
             
             do {
                 let jsonData = try JSONEncoder().encode(photo)
                 let jsonString = String(data: jsonData, encoding: .utf8)!
+
+                    // Print the request payload
+
+                if let payloadString = String(data: jsonData, encoding: .utf8) {
+                    print("------------------------------------------")
+                    print("Request payload: \(payloadString)")
+                    print("------------------------------------------")
+
+                }
+    
+
                 
                 // Prepare URL
-                let urlStr = (localStorage.string(forKey: "url") ?? "https://www.egnss4all.com") + "/egnss4allservices/comm_photo.php"
-                
+                let urlStr = Configuration.baseURLString + ApiEndPoint.photo
+                print("------------------------------------------")
+                print(urlStr)
+                print("------------------------------------------")
+                 print("IdToken:   \(UserStorage.token!)")
+                print("------------------------------------------")
                 let url = URL(string: urlStr)
-                
-                
-                guard let requestUrl = url else { fatalError() }
+                guard let requestUrl = url else { return }
                 // Prepare URL Request Object
                 var request = URLRequest(url: requestUrl)
                 request.httpMethod = "POST"
-                 
+                request.setValue("Bearer \(UserStorage.token!)", forHTTPHeaderField: "Authorization")
+
+                print(request)
                 // HTTP Request Parameters which will be sent in HTTP Request Body
                 let postString = "user_id="+userID+"&task_id="+String(persistTask.id)+"&photo="+jsonString
+                
                 // Set HTTP Request Body
                 request.httpBody = postString.data(using: String.Encoding.utf8);
                 // Perform HTTP Request
@@ -393,9 +398,19 @@ class TaskViewController: UIViewController {
                         }
                         return
                     }
+
+
+
                     // Convert HTTP Response Data to a String
                     if let data = data, let dataString = String(data: data, encoding: .utf8) {
                         DispatchQueue.main.async {
+                        print("------------------------------------------")
+                        print("Server response: \(dataString)")
+                        print("------------------------------------------")
+                        if let httpResponse = response as? HTTPURLResponse {
+                        print("HTTP Status Code: \(httpResponse.statusCode)")}
+                        print("------------------------------------------")
+
                             self.processResponseData1(data: dataString)
                         }
                     }
@@ -406,6 +421,7 @@ class TaskViewController: UIViewController {
         } else {
             sendStatus()
         }
+        
     }
     
     func processResponseData1(data:String) {
@@ -413,6 +429,7 @@ class TaskViewController: UIViewController {
         struct Answer: Decodable {
             var status: String
             var error_msg: String?
+            var photo_id:Int?
         }
 
         let jsonData = data.data(using: .utf8)!
@@ -420,13 +437,13 @@ class TaskViewController: UIViewController {
         
         if answer.status == "ok" {
             photosToSend[0].sended = true
-            
-            do{
+            persistTask.photoCount = String(Int(persistTask.photoCount!)!+1)
+            photosToSend[0].id = String(answer.photo_id!)
+            do {
                 try self.manageObjectContext.save()
-            }catch{
+            } catch {
                 print("Could not save data: \(error.localizedDescription)")
             }
-            
             sendPhoto()
         } else {
             waitAlert.dismiss(animated: true) {
@@ -436,28 +453,25 @@ class TaskViewController: UIViewController {
     }
     
     func sendStatus() {
-                
-        do {
+        
             let statusString = "data provided"
             let noteString = persistTask.note ?? ""
                         
-            let customServer = localStorage.bool(forKey: "customServer")
-            
-            var urlStr = ""
-            
-            if customServer {
-                urlStr = (localStorage.string(forKey: "url") ?? "https://www.egnss4all.com") + "/egnss4allservices/comm_status.php"
-            } else {
-                urlStr = "https://www.egnss4all.com/egnss4allservices/comm_status.php"
-            }
-            
-           
+            // Prepare URL
+            let urlStr = Configuration.baseURLString + ApiEndPoint.status
+            print("------------------------------------------")
+            print(urlStr)
+            print("------------------------------------------")
+            print("IdToken:   \(UserStorage.token!)")
+            print("------------------------------------------")
             let url = URL(string: urlStr)
+
             guard let requestUrl = url else { fatalError() }
             // Prepare URL Request Object
             var request = URLRequest(url: requestUrl)
             request.httpMethod = "POST"
-             
+                         request.httpMethod = "POST"
+                    request.setValue("Bearer \(UserStorage.token!)", forHTTPHeaderField: "Authorization")
             // HTTP Request Parameters which will be sent in HTTP Request Body
             let postString = "task_id="+String(persistTask.id)+"&status="+statusString+"&note="+noteString
             // Set HTTP Request Body
@@ -482,7 +496,7 @@ class TaskViewController: UIViewController {
             }
             task.resume()
             
-        } catch { print(error) }
+    
     }
     
     func processResponseData2(data:String) {
@@ -498,9 +512,9 @@ class TaskViewController: UIViewController {
         if answer.status == "ok" {
             persistTask.status = "data provided"
             
-            do{
+            do {
                 try self.manageObjectContext.save()
-            }catch{
+            } catch {
                 print("Could not save data: \(error.localizedDescription)")
             }
             
@@ -545,4 +559,4 @@ class TaskViewController: UIViewController {
     }
 }
 
-
+// Created for the GSA in 2020-2021. Project management: SpaceTec Partners, software development: www.foxcom.eu

@@ -2,7 +2,7 @@
 //  PhotoDetailViewController.swift
 //  EGNSS4CAP
 //
-//  
+//  Created by FoxCom on 05/11/2020.
 //
 
 import UIKit
@@ -15,7 +15,6 @@ class PhotoDetailViewController: UIViewController {
     var manageObjectContext: NSManagedObjectContext!
     
     let localStorage = UserDefaults.standard
-    
     var imageMap = UIImageView()
 
     @IBOutlet weak var photoImageView: UIImageView!
@@ -27,8 +26,8 @@ class PhotoDetailViewController: UIViewController {
     @IBOutlet weak var sendedValueLabel: UILabel!
     @IBOutlet weak var noteValueLabel: UILabel!
     @IBOutlet weak var noteButton: UIBarButtonItem!
-    @IBOutlet weak var OSNMAValue: UILabel!
     @IBOutlet weak var pdfButton: UIButton!
+    
     
     
     @IBAction func pdfAction(_ sender: UIButton) {
@@ -41,13 +40,12 @@ class PhotoDetailViewController: UIViewController {
             present(alert, animated: true, completion: nil)
             return
         }
-        let df = DateFormatter()
-        df.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        let df = MyDateFormatter.yyyyMMdd
         
-        let pdfCreator = PDFCreator(title: "", image: image, map: imageMap.image!, latitude: persistPhoto.lat, longitude: persistPhoto.lng, shotDate: df.string(from: persistPhoto.created!), note: persistPhoto.note ?? "", send: persistPhoto.sended, validated: persistPhoto.validated)
+        guard let map = imageMap.image else { return }
+        
+        let pdfCreator = PDFCreator(title: "", image: image, map: map, latitude: persistPhoto.lat, longitude: persistPhoto.lng, shotDate: df.string(from: persistPhoto.created!), note: persistPhoto.note ?? "", send: persistPhoto.sended, validated: persistPhoto.validated)
         let pdfData = pdfCreator.createPDF()
-        /*let vc = UIActivityViewController(activityItems: [pdfData], applicationActivities: [])
-        self.present(vc, animated: true, completion: nil)*/
         
         let vc = UIActivityViewController(activityItems: [pdfData], applicationActivities: [])
        
@@ -66,7 +64,6 @@ class PhotoDetailViewController: UIViewController {
         waitAlert.view.addSubview(loadingIndicator)
         
         self.present(waitAlert, animated: true, completion: nil)
-        
         let userID = String(UserStorage.userID)
         
         struct Photo:Codable {
@@ -85,45 +82,38 @@ class PhotoDetailViewController: UIViewController {
             var note:String
             var photo:String
             var digest:String
-            var validated:Bool
-            var id: String
+            var deviceManufacture:String
+            var deviceModel:String
+            var devicePlatform:String
+            var deviceVersion:String
         }
         
-        let df = DateFormatter()
-        df.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        let df = MyDateFormatter.yyyyMMdd
+
         let stringDate = df.string(from: persistPhoto.created!)
         
         let data:Data = persistPhoto.photo!
         let base64String:String = data.base64EncodedString(options: NSData.Base64EncodingOptions(rawValue:0))
         
-        let photo = Photo(lat:persistPhoto.lat, lng:persistPhoto.lng, altitude: persistPhoto.altitude, bearing: persistPhoto.bearing, magnetic_azimuth: persistPhoto.azimuth, photo_heading: persistPhoto.photoHeading, accuracy: persistPhoto.accuracy, orientation: persistPhoto.orientation, pitch: persistPhoto.pitch, roll: persistPhoto.roll, photo_angle: persistPhoto.tilt, created: stringDate, note: persistPhoto.note ?? "", photo: base64String, digest:persistPhoto.digest!, validated: persistPhoto.validated, id: persistPhoto.id ?? "")
+        
+        let photo = Photo(lat:persistPhoto.lat, lng:persistPhoto.lng, altitude: persistPhoto.altitude, bearing: persistPhoto.bearing, magnetic_azimuth: persistPhoto.azimuth, photo_heading: persistPhoto.photoHeading, accuracy: persistPhoto.accuracy, orientation: persistPhoto.orientation, pitch: persistPhoto.pitch, roll: persistPhoto.roll, photo_angle: persistPhoto.tilt, created: stringDate, note: persistPhoto.note ?? "", photo: base64String, digest:persistPhoto.digest! ,deviceManufacture: deviceManufacturer ,deviceModel: deviceModel ,devicePlatform:devicePlatform, deviceVersion: deviceVersion)
         
         do {
             let jsonData = try JSONEncoder().encode(photo)
             let jsonString = String(data: jsonData, encoding: .utf8)!
             
             // Prepare URL
-            
-            let customServer = localStorage.bool(forKey: "customServer")
-            
-            var urlStr = ""
-            
-            if customServer {
-                urlStr = (localStorage.string(forKey: "url") ?? "https://www.egnss4all.com") + "/egnss4allservices/comm_photo.php"
-            } else {
-                urlStr = "https://www.egnss4all.com/egnss4allservices/comm_photo.php"
-            }
-            
-            
+            let urlStr = Configuration.baseURLString + ApiEndPoint.photo
+            print("------------------------------------------")
             print(urlStr)
-            
+            print("------------------------------------------")
             let url = URL(string: urlStr)
-        
             guard let requestUrl = url else { fatalError() }
             // Prepare URL Request Object
             var request = URLRequest(url: requestUrl)
             request.httpMethod = "POST"
-             
+            request.setValue("Bearer \(UserStorage.token!)", forHTTPHeaderField: "Authorization")
+            print(request)
             // HTTP Request Parameters which will be sent in HTTP Request Body
             let postString = "user_id="+userID+"&photo="+jsonString
             // Set HTTP Request Body
@@ -168,9 +158,9 @@ class PhotoDetailViewController: UIViewController {
             
             self.persistPhoto.note = textField?.text
             
-            do{
+            do {
                 try self.manageObjectContext.save()
-            }catch{
+            } catch {
                 print("Could not save data: \(error.localizedDescription)")
             }
             
@@ -180,6 +170,7 @@ class PhotoDetailViewController: UIViewController {
         // 4. Present the alert.
         self.present(alert, animated: true, completion: nil)
     }
+    
     
     func mapScreenShot(completion: @escaping (UIImage?) -> Void) {
    
@@ -220,7 +211,7 @@ class PhotoDetailViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         mapScreenShot { image in
             if let mapImage = image {
                
@@ -234,12 +225,15 @@ class PhotoDetailViewController: UIViewController {
         metaView.layer.cornerRadius = 10
         pdfButton.layer.cornerRadius = 10
         
-        updateDetail()        
+        updateDetail()
         updateSendBUtton()
+        
+        print(latitudeApp)
+        print(longitudeApp)
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        AppDelegate.AppUtility.lockOrientation(UIInterfaceOrientationMask.portrait, andRotateTo: UIInterfaceOrientation.portrait)
+        //AppDelegate.AppUtility.lockOrientation(UIInterfaceOrientationMask.portrait, andRotateTo: UIInterfaceOrientation.portrait)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -257,31 +251,32 @@ class PhotoDetailViewController: UIViewController {
     }
     
     func updateDetail() {
-        print(persistPhoto)
         photoImageView.image = UIImage(data: persistPhoto.photo!)
-        latValueLabel.text = persistPhoto.lat.description
-        lngValueLabel.text = persistPhoto.lng.description
+        print(persistPhoto.lat)
+        print(persistPhoto.lng)
+        if persistPhoto.lat == 0{
+            latValueLabel.text = latitudeApp
+            lngValueLabel.text = longitudeApp
+        }else{
+                    latValueLabel.text = persistPhoto.lat.description
+                    lngValueLabel.text =  persistPhoto.lng.description
+
+        }
+//        latValueLabel.text = latitudeApp || persistPhoto.lat.description
+//        lngValueLabel.text = longitudeApp|| persistPhoto.lng.description
         /* DEBUGCOM
         latValueLabel.text = persistPhoto.centroidLat.description
         lngValueLabel.text = persistPhoto.centroidLng.description
         /**/*/
         
-        let df = DateFormatter()
-        df.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        let df = MyDateFormatter.yyyyMMdd
+        
         createdValueLabel.text = df.string(from: persistPhoto.created!)
         
         if persistPhoto.sended == true {
             sendedValueLabel.text = "yes"
         } else {
             sendedValueLabel.text = "no"
-        }
-        
-        if persistPhoto.validated {
-            print("vero")
-            OSNMAValue.text = "yes"
-        } else {
-            print("falso")
-            OSNMAValue.text = "no"
         }
         
         noteValueLabel.text = persistPhoto.note
@@ -310,6 +305,7 @@ class PhotoDetailViewController: UIViewController {
         struct Answer: Decodable {
             var status: String
             var error_msg: String?
+            var photo_id: Int?
         }
 
         let jsonData = data.data(using: .utf8)!
@@ -317,28 +313,21 @@ class PhotoDetailViewController: UIViewController {
         
         if answer.status == "ok" {
             showSendingSuccess()
-            
             persistPhoto.sended = true
-           
-              
-            do{
-                
+            persistPhoto.id = "\(answer.photo_id ?? 0)"
+            do {
                 try self.manageObjectContext.save()
-            }catch{
+            } catch {
                 print("Could not save data: \(error.localizedDescription)")
             }
+            
             updateDetail()
             updateSendBUtton()
-            
         } else {
             showSendingError()
         }
     }
     
-     
-    
-    
-
     /*
     // MARK: - Navigation
 
@@ -351,4 +340,4 @@ class PhotoDetailViewController: UIViewController {
 
 }
 
-
+// Created for the GSA in 2020-2021. Project management: SpaceTec Partners, software development: www.foxcom.eu

@@ -7,6 +7,8 @@ class UserStorage: PersistStorage {
         case userName
         case userSurname
         case gpsCapable
+        case token
+
     }
     
     typealias KeyEnum = Key
@@ -28,5 +30,9 @@ class UserStorage: PersistStorage {
     @item(key: Key.gpsCapable)
     static var gpsCapable: Bool?
     
+    @item(key: Key.token)
+    static var token: String?
+    
 }
 
+// Created for the GSA in 2020-2021. Project management: SpaceTec Partners, software development: www.foxcom.eu

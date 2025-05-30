@@ -8,8 +8,6 @@ class SettingViewController: UIViewController, UITableViewDelegate, UITableViewD
         self.tableView.reloadData()
     }
     
-    
-    
     @IBOutlet weak var tableView: UITableView!
     
     var satellites = [Satellite]()
@@ -56,20 +54,14 @@ class SettingViewController: UIViewController, UITableViewDelegate, UITableViewD
     }
     
     
-    @objc func enableExtGPS(_ sender : UISwitch!){
+    @objc func enableExtGPS(_ sender : UISwitch!) {
         if sender.isOn {
-            
-            
-            
             let sb = UIStoryboard(name: "Alerts", bundle: nil)
             let alertVC = sb.instantiateViewController(identifier: "alertPickerVC") as! alertPickerVC
             alertVC.modalPresentationStyle = .overCurrentContext
             alertVC.delegate = self
-            
-            
             alertVC.modalTransitionStyle = .crossDissolve
             self.present(alertVC, animated: true, completion: nil)
-            
         } else {
             self.localStorage.set(false, forKey: "externalGPS")
             periphealUUID = CBUUID(string: "00000000-0000-0000-0000-000000000000")

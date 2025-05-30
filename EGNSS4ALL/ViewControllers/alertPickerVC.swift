@@ -2,7 +2,7 @@
 //  alertPickerVC.swift
 //  EGNSS4ALL
 //
-//  Created by ERASMICOIN on 20/09/22.
+//  Created by Gabriele Amendola on 20/09/22.
 //
 
 import UIKit
@@ -50,7 +50,7 @@ class alertPickerVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
         case .poweredOn:
             
             print("Bluetooth attivo")
-            manager?.scanForPeripherals(withServices:[serviceUUID], options: nil)
+            manager?.scanForPeripherals(withServices:nil, options: nil)
         case .unsupported:
            
             print("Bluetooth non è supportato")
@@ -61,10 +61,10 @@ class alertPickerVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
     }
     
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        peripheral.discoverServices([serviceUUID])
+        peripheral.discoverServices([gnssBLEServiceUUID])
         print("Connesso a " +  peripheral.name!)
         
-        //self.alertStandard(titolo: "External GNSS", testo: "Connected")
+        self.alertStandard(titolo: "External GNSS", testo: "Connected")
     
     }
     
@@ -104,12 +104,15 @@ class alertPickerVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         //let oggetto = oggetti![indexPath.row]
         //delegate?.onSelectData(professione: oggetto)
+        myPeripheal = peripherals[indexPath.row]
+        myPeripheal!.delegate = self
         self.localStorage.set(true, forKey: "externalGPS")
         self.localStorage.set(peripherals[indexPath.row].identifier.uuidString, forKey: "periphealUUID")
-        let selPeriphealUUID = localStorage.string(forKey: "periphealUUID")
+       // let selPeriphealUUID = localStorage.string(forKey: "periphealUUID")
+        manager?.connect(myPeripheal!)
         periphealUUID = CBUUID(string: peripherals[indexPath.row].identifier.uuidString)
         peripherals.removeAll()
-        manager?.scanForPeripherals(withServices:[serviceUUID], options: nil)
+        manager?.scanForPeripherals(withServices:nil, options: nil)
         //self.dismiss(animated: true, completion: nil)
     }
     
@@ -135,6 +138,10 @@ class alertPickerVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
         // Do any additional setup after loading the view.
     }
     
+    override func viewWillDisappear(_ animated: Bool) {
+        disConnectBLEDevice()
+    }
+    
 
     /*
     // MARK: - Navigation
@@ -151,19 +158,19 @@ class alertPickerVC: UIViewController, UITableViewDelegate, UITableViewDataSourc
 extension alertPickerVC: CBPeripheralDelegate {
     // MARK: - CBPeripheralDelegate
     
+    
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         guard let services = peripheral.services else { return }
         print(peripheral.debugDescription)
         
-       
-        
-        
         for service in services {
-            peripheral.discoverCharacteristics(nil, for: service)
-            
+            if(service.uuid == gnssBLEServiceUUID)
+            {
+                peripheral.discoverCharacteristics([gnssBLECharacteristicUUID], for: service)
+            }
             
         }
-        
+
     }
     
     
@@ -176,6 +183,42 @@ extension alertPickerVC: CBPeripheralDelegate {
     }
     
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+        if(characteristic == gnssBleCharacteristic){
+            
+            let str = String(decoding: characteristic.value!, as: UTF8.self)
+            //let data = Data(str.utf8)
+            
+            if(str.contains("*")){
+
+                let finalStr =  mainGNSSString + str
+                let matched = matchesNmea(in: finalStr)
+                if(!matched.isEmpty){
+                    for stringItem in matched {
+                        mainGNSSString = mainGNSSString.replacingOccurrences(of: stringItem, with: "")
+                        showToast(message: "NEMA : \(stringItem) ", font: .systemFont(ofSize: 12.0))
+                        print("NEMA : \(stringItem)")
+                    }
+                }
+
+            }
+            else {
+                mainGNSSString = mainGNSSString + str
+            }
+
+//            if(str.contains("*")){
+//                let finalStr =  mainGNSSString + str
+//                mainGNSSString = ""
+//                
+//                self.showToast(message: "NEMA : \(finalStr) ", font: .systemFont(ofSize: 12.0))
+//            }
+//            else {
+//                mainGNSSString = str
+//            }
+            
+            return
+        }
+        
+        
         //print(characteristic.debugDescription)
         //print("update")
         //self.recordFunc()
@@ -200,9 +243,20 @@ extension alertPickerVC: CBPeripheralDelegate {
         //NO
     }
     
+    func matchesNmea( in text: String) -> [String] {
+
+        do {
+            let results = nmeaRegex.matches(in: text,
+                                        range: NSRange(text.startIndex..., in: text))
+            return results.map {
+                String(text[Range($0.range, in: text)!])
+            }
+        }
+    }
+    
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor descriptor: CBDescriptor, error: Error?) {
         
-       //NO
+       print("didUpdateValueFor")
     }
     
     
@@ -214,21 +268,60 @@ extension alertPickerVC: CBPeripheralDelegate {
    
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+        
         guard let characteristics = service.characteristics else { return }
-        myCharacteristic = characteristics[0]
-        telCharacteristic = characteristics[1]
-        navCharacteristic = characteristics[2]
-        pvtCharacteristic = characteristics[3]
-       
-        myPeripheal?.setNotifyValue(true, for: pvtCharacteristic!)
-        myPeripheal?.setNotifyValue(true, for: myCharacteristic!)
-        myPeripheal?.setNotifyValue(true, for: telCharacteristic!)
-        myPeripheal?.setNotifyValue(true, for: navCharacteristic!)
+        
+        for characteristic in characteristics {
+            if(characteristic.uuid == gnssBLECharacteristicUUID)
+            {
+                gnssBleCharacteristic = characteristic
+                myPeripheal?.setNotifyValue(true, for: gnssBleCharacteristic!)
+            }
+
+        }
+        
+//        myCharacteristic = characteristics[0]
+//        telCharacteristic = characteristics[1]
+//        navCharacteristic = characteristics[2]
+//        pvtCharacteristic = characteristics[3]
+//       
+//        myPeripheal?.setNotifyValue(true, for: pvtCharacteristic!)
+//        myPeripheal?.setNotifyValue(true, for: myCharacteristic!)
+//        myPeripheal?.setNotifyValue(true, for: telCharacteristic!)
+//        myPeripheal?.setNotifyValue(true, for: navCharacteristic!)
         
         
         self.dismiss(animated: true)
 
     }
+    
+    func showToast(message : String, font: UIFont) {
+
+        let toastLabel = UILabel(frame: CGRect(x: self.view.frame.size.width/2 - 65, y: self.view.frame.size.height-100, width: 200, height: 35))
+        toastLabel.backgroundColor = UIColor.black.withAlphaComponent(0.6)
+        toastLabel.textColor = UIColor.white
+        toastLabel.font = font
+        toastLabel.textAlignment = .center;
+        toastLabel.text = message
+        toastLabel.alpha = 1.0
+        toastLabel.layer.cornerRadius = 10;
+        toastLabel.clipsToBounds  =  true
+        self.view.addSubview(toastLabel)
+        UIView.animate(withDuration: 4.0, delay: 0.1, options: .curveEaseOut, animations: {
+             toastLabel.alpha = 0.0
+        }, completion: {(isCompleted) in
+            toastLabel.removeFromSuperview()
+        })
+    }
+    
+    //discConnectBLEDevice
+    func disConnectBLEDevice()  {
+        if myPeripheal != nil {
+            manager?.cancelPeripheralConnection(myPeripheal!)
+        }
+    }
+    
+
 }
 
 public extension String {
@@ -252,7 +345,7 @@ public extension String {
     self[index(at: value.lowerBound)..<index(at: value.upperBound)]
   }
 
-  subscript(value: PartialRangeUpTo<Int>) -> Substring {
+  subscript(value: PartialRangeUpTo<Int>) -> Substring  {
     self[..<index(at: value.upperBound)]
   }
 

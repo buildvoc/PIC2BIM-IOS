@@ -2,7 +2,7 @@
 //  SkyViewVC.swift
 //  EGNSS4CAP
 //
-//  Created by ERASMICOIN on 30/05/22.
+//  Created by Gabriele Amendola on 30/05/22.
 //
 
 import UIKit
@@ -23,7 +23,7 @@ class SkyViewVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDelega
     }
     
     
-    @IBOutlet weak var circleView: circleView!
+    @IBOutlet weak var circleView: CircleView!
     
     @IBOutlet weak var selectBtn: UIButton!
     @IBOutlet weak var constLabel: UILabel!
@@ -70,6 +70,7 @@ class SkyViewVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDelega
             
         }
     }
+    
     let locationManager = CLLocationManager()
     let localStorage = UserDefaults.standard
     
@@ -118,18 +119,19 @@ class SkyViewVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDelega
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             guard let data = data, error == nil else {                                                 // controllo problemi di network
                 print("error=\(String(describing: error))")
-                self.alertStandard(titolo: "NETWORK ERROR", testo: "Check Internet Connection")
+
                 return
             }
+          
             
             if let httpStatus = response as? HTTPURLResponse, httpStatus.statusCode != 200 {           // controllo errore
                 print("il codice dovrebbe essere 200, ma è \(httpStatus.statusCode)")
                 print("response = \(String(describing: response))")
             }
             
-            if let jsonDictionary = NetworkService.parseJSONFromData(data as Data) {
+           if let jsonDictionary = NetworkService.parseJSONFromData(data as Data) {
                  //Carico l'oggetto con tutto il contenuto appena scaricato
-                //print(jsonDictionary)
+                print(jsonDictionary)
                 DispatchQueue.main.async(execute: {
                     self.sats = Satellite.downloadAllSatsSkyView(datiJson: data as NSData)
                     

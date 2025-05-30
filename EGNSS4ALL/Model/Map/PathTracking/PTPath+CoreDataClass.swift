@@ -2,6 +2,7 @@
 //  PTPath+CoreDataClass.swift
 //  GTPhotos
 //
+//  Created by Jiří Müller on 27/11/2020.
 //
 //
 
@@ -27,4 +28,4 @@ public class PTPath: NSManagedObject {
     }
 }
 
-
+// Created for the GSA in 2020-2021. Project management: SpaceTec Partners, software development: www.foxcom.eu

@@ -2,7 +2,7 @@
 //  PhotoTableViewCell.swift
 //  EGNSS4CAP
 //
-//  
+//  Created by FoxCom on 04/11/2020.
 //
 
 import UIKit
@@ -15,7 +15,6 @@ class PhotoTableViewCell: UITableViewCell {
     @IBOutlet weak var sendedValueLabel: UILabel!
     @IBOutlet weak var noteValueLabel: UILabel!
     @IBOutlet weak var photoImage: UIImageView!
-    @IBOutlet weak var backView: UIView!
     
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -30,4 +29,4 @@ class PhotoTableViewCell: UITableViewCell {
 
 }
 
-
+// Created for the GSA in 2020-2021. Project management: SpaceTec Partners, software development: www.foxcom.eu
